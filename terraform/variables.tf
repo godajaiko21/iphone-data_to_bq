@@ -31,7 +31,7 @@ variable "google_pubsub_cloudiot_telemetry_topic" {
 
 ## Cloud Functions
 variable "google_cloudfunctions_function_name" {
-  default = "{{FUNCTION_NAME}}"
+  default = "pubsub2bq"
 }
 
 variable "google_storage_bucket_cfarch_name" {
