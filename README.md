@@ -26,14 +26,15 @@
     - Cloud Functions
     - BigQuery
     - Cloud Storage(注)
+    - Compute Engine(注)
 
-注：Cloud Storageはシステム構成上には記載がありませんが、BigQueryの一時ファイル保管先、およびCloud Functionsのアーカイブ保管先として利用するため、あわせて有効化しておきます。
+注：Cloud Storage、Compute Engineはシステム構成上には記載がありませんが、BigQueryの一時ファイル保管時や、Cloud Functionsのアーカイブ保管時に利用するため、あわせて有効化しておきます。
 
 ## 環境構築手順
 ### 1. gitリポジトリのクローン
 - ローカルPC上の任意のディレクトリを作成し、git cloneコマンドにより、本リポジトリを同期します。
 ```shell
-cd {BASE_DIR}/
+cd {{BASE_DIR]}/
 git clone https://github.com/godajaiko21/iphone-data_to_bq.git
 ```
 
@@ -49,6 +50,7 @@ git clone https://github.com/godajaiko21/iphone-data_to_bq.git
         - Cloud Functions 開発者
         - BigQuery 管理者
         - ストレージ管理者
+        - Compute管理者
     - 注2: 「キーのタイプ」では、JSONを選択してください。
 
 #### 2.2. サービスアカウントJSONキーの配置
@@ -59,11 +61,20 @@ git clone https://github.com/godajaiko21/iphone-data_to_bq.git
 - `iphone-data_to_bq/terraform/variables.tf`ファイルを書き換えます。
     - `{{ }}`で囲まれた文字列をすべて編集します。
 
+#### 3.2. Cloud Functionsで使用するアーカイブファイルの作成
+- 必要に応じて、Cloud Functionで利用する`{{BASE_DIR}}/iphone-data_to_bq/terraform/cloud_function`内のコードを編集します。
+- 編集後、下記のコマンドを実行しアーカイブファイルを作成します。
+```shell
+cd {{BASE_DIR}}/iphone-data_to_bq/terraform/cloud_function
+zip ../../files/cloud_function.zip main.py requrements.txt
+cd ../
+```
+
 #### 3.2. Terraformの実行
 - 下記コマンドにより、Terraformを実行し、GCPサービスのセットアップを行います。
     - サービス有効化によって課金が発生しますのでご注意ください。
 ```shell
-cd {BASE_DIR}/iphone-data_to_bq/terraform
+cd {{BASE_DIR}}/iphone-data_to_bq/terraform
 terraform init
 terraform plan
 # -> エラーがないことを確認
@@ -84,16 +95,17 @@ terraform apply
 #### 4.1. SSH鍵の作成
 - Cloud IoT Coreと通信するデバイス用のSSH鍵(公開鍵/秘密鍵)を作成します。
 ```shell
-cd {BASE_DIR}/iphone-data_to_bq/files
+cd {{BASE_DIR}}/iphone-data_to_bq/files
 openssl req -x509 -newkey rsa:2048 -keyout rsa_private.pem -nodes -out rsa_cert.pem -subj "/CN=unused"
 ```
 
 #### 4.2. gcloudコマンドを使ったデバイスの登録
 - 作成したSSH公開鍵`rsa_cert.pem`はを引数に指定し、Cloud IoT Coreにデバイスを登録します。
-    - `{{ }}`で囲まれた文字列は編集してください。`REGISTRY_ID`は手順3.1.と整合するようにします。
+    - `{{ }}`で囲まれた文字列を編集してください。`PROJECT_ID`、`REGISTRY_ID`は手順3.1.と整合するようにします。
 ```shell
-cd {BASE_DIR}/iphone-data_to_bq/files
-gcloud iot devices create {{DEVICE_ID}} --region=asia-east1 --registry={{REGISTRY_ID}} --public-key path=rsa_cert.pem,type=RSA_X509_PEM
+cd {{BASE_DIR}}/iphone-data_to_bq/files
+gcloud auth login
+gcloud iot devices create {{DEVICE_ID}} --region=asia-east1 --project={{PROJECT_ID}} --registry={{REGISTRY_ID}} --public-key path=rsa_cert.pem,type=RSA_X509_PEM
 ```
 
 ### 5. iPhoneに転送するファイルの準備
@@ -102,23 +114,28 @@ gcloud iot devices create {{DEVICE_ID}} --region=asia-east1 --registry={{REGISTR
 #### 5.1. 秘密鍵ファイルの準備
 - 手順4で作成したSSH秘密鍵`rsa_private.pem`は、拡張子を`.txt`に変え、`iphone-data_to_bq/pythonista`ディレクトリにコピーします。
 ```shell
-cd {BASE_DIR}/iphone-data_to_bq/pythonista
+cd {{BASE_DIR}}/iphone-data_to_bq/pythonista
 cp rsa_private.pem ../pythonista/rsa_private.txt
 ```
 
 #### 5.2. GoogleのCAルート証明書の準備
 - GoogleのCAルート証明書をインターネット上から入手します。
 ```shell
-cd {BASE_DIR}/iphone-data_to_bq/pythonista
+cd {{BASE_DIR}}/iphone-data_to_bq/pythonista
 wget https://pki.google.com/roots.pem -O roots.txt
 ```
 
 #### 5.3. `send_to_cloudiot.sh`の準備
 - `files/send_to_cloudiot.sh`スクリプトの中身を編集します。
     - 手順3.1.の設定内容にあわせて、`{{ }}`で囲まれた文字列をすべて編集します。
+    - `{{ }}`で囲まれた文字列を編集してください。`PROJECT_ID`、`REGISTRY_ID`は手順3.1.と整合するように、`DEVICE_ID`は手順4.2.と整合するようにします。
+```
+python3 cloudiot_mqtt.py --registry_id={{REGISTRY_ID}} --cloud_region=asia-east1 --project_id={{PROJECT_ID}} --device_id={{DEVICE_ID}} --algorithm=RS256 --num_messages=$1 --private_key_file=rsa_private.txt --ca_certs=roots.txt
+
+```
 
 #### 5.4. iCloud Driveへの配置
-- `{BASE_DIR}/iphone-data_to_bq/pythonista`上にある下記４ファイルをiCloud Drive上の任意のディレクトリに配置します。
+- `{{BASE_DIR}}/iphone-data_to_bq/pythonista`上にある下記４ファイルをiCloud Drive上の任意のディレクトリに配置します。
     - cloudiot_mqtt.py
     - roots.txt
     - rsa_private.txt
@@ -181,11 +198,12 @@ pip install paho-mqtt pyjwt
 ## 環境利用手順
 ### 1. iPhone上でPythonistaを起動します。
 ### 2. Pythonista上でのStaShを起動します。
-### 3. `send_to_cloudiot.sh`を実行します。
-`{{NUM_MESSAGES}}`には、送信回数を指定します。（約1秒に1回の頻度でデータ送信する仕様となっています）
+### 3. Pythonスクリプトを実行します。
 ```
-cd {DIR}
+cd {{SCRIPT_DIR}}
 send_to_cloudiot.sh {{NUM_MESSAGES}}
 ```
+- `{{SCRIPT_DIR}}`には、スクリプト(`send_to_cloudiot.sh`)を配置したディレクトリを指定します。
+- `{{NUM_MESSAGES}}`には、送信回数を指定します。（約1秒に1回の頻度でデータ送信する仕様となっています）
 
 以上
