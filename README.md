@@ -3,6 +3,7 @@
 - 本稿は、クラウドサービスを利用するように設定する手順が含まれており、実施によって一定の料金が発生するものとなっています。したがって、本稿記載の手順実行においては内容を理解の上、自己責任で実施するようお願いします。可能な場合は、無料トライアルを利用した使用を行うことを推奨します。
 - また、本稿は最低限の機能の確認を目的とした最低限の設定で記載しております。利用する際には、非機能要件に応じて設定を見直すことを推奨します。
 - 本稿は2019年1月時点の情報に基づいており、現在の情報と異なっている可能性があります。本稿の内容は執筆者独自の見解であり、所属企業における立場、戦略、意見を代表するものではありません。
+- 実行する際は、GCP上で必ず独立した新規プロジェクトを作成し、そちらを利用ください。Terraformを利用するため、誤って既存プロジェクト上で実行すると、予期せず既存のリソースが削除される場合があります。
 
 ## 前提作業
 - 本手順では、下記作業が完了しているものとします。
@@ -17,8 +18,10 @@
     - wget
 
 - GCPを利用するためのGoogleアカウントの作成
-
+　
 - GCPプロジェクトの作成
+
+注：必ず独立した、新規プロジェクトを作成してください。Terraformを利用するため、誤って既存プロジェクト上で実行すると、予期せず既存のリソースが削除される場合があります。
 
 - GCPコンソール上での各種APIの有効化
     - Cloud IoT Core
@@ -44,9 +47,11 @@ git clone https://github.com/godajaiko21/iphone-data_to_bq.git
 #### 2.1. サービスアカウントJSONキーの作成
 - 下記サイトの「サービス アカウント キーの作成」に記載の手順をもとに、サービスアカウントの作成とJSONキーファイルのダウンロードを行ってください。
     - https://cloud.google.com/iam/docs/creating-managing-service-account-keys?authuser=19&hl=ja
-    - 注1： 「サービス アカウントの権限（オプション）」画面では、下記の役割を追加してください。（プロジェクト上の全リソースに対する編集権限）
-        - 編集者
+    - 注1： 「サービス アカウントの権限（オプション）」画面では、下記の役割を追加してください。
+        - 編集者 （プロジェクト上の全リソースに対する編集権限）
     - 注2: 「キーのタイプ」では、JSONを選択してください。
+
+注：最小限の機能の確認のため、非機能要件を考慮しない設定となっています。要件に応じた、権限の見直しを行ってください。
 
 #### 2.2. サービスアカウントJSONキーの配置
 - ダウンロードしたJSONファイルは、`service-account.json`とリネームした上で、`iphone-data_to_bq/files/`内に配置します。
@@ -77,6 +82,17 @@ terraform apply
 # -> yes
 # -> エラーがないことを確認
 ```
+
+注:命名規則が不正な場合は、terraformコマンド実行のタイミングでエラーとなりますのでご注意ください。エラー終了した場合は、成功時点までロールバックされるため、`terraform apply`からの再実施で問題ない想定ですが、リカバリ手順にて初期状態までロールバックください。特に、Cloud Storageのバケット名はユニバーサルでユニークでなければなりませんので注意が必要です。
+
+#### 補足：リカバリ手順
+- エラー終了してしまった場合などは、下記コマンドにより初期状態にロールバックします。
+```
+cd {{BASE_DIR}}/iphone-data_to_bq/terraform
+terraform destroy -force
+```
+
+- 初期状態にロールバック後、手順3.2.より再実施します。
 
 #### 3.3. 実行結果の確認
 - GCPコンソール上から、下記のサービスがデプロイされたことを確認します。
@@ -110,7 +126,7 @@ gcloud iot devices create {{DEVICE_ID}} --region=asia-east1 --project={{PROJECT_
 - 手順4で作成したSSH秘密鍵`rsa_private.pem`は、拡張子を`.txt`に変え、`iphone-data_to_bq/pythonista`ディレクトリにコピーします。
 ```shell
 cd {{BASE_DIR}}/iphone-data_to_bq/pythonista
-cp rsa_private.pem ../pythonista/rsa_private.txt
+cp ../files/rsa_private.pem rsa_private.txt
 ```
 
 #### 5.2. GoogleのCAルート証明書の準備
@@ -137,23 +153,25 @@ python3 cloudiot_mqtt.py --registry_id={{REGISTRY_ID}} --cloud_region=asia-east1
     - send_to_cloudiot.sh
 
 ### 6.iPhone上でのPythonistaのセットアップ
-iPhoneに最新のPythonista3をインストールします。
+iPhoneに最新のPythonista 3をインストールし、セットアップします。
 
-#### 6.1. Pythonista3のインストール
+#### 6.1. Pythonista 3のインストール
 - App StoreからiPhone上にPythonista3(有料)をインストールします。
 
-#### 6.2. StaShの有効化
+#### 6.2. Pythonista 3でのStaShの有効化
 - 下記手順から、Pythonista3上でStaShを有効化します。
     - https://qiita.com/sotsuka4198/items/696225da3eaf92038cdf
 ```shell
 import requests as r; exec(r.get('http://bit.ly/get-stash').text)
 ```
+- StaSh有効化後、Pythonista 3を再起動します。
 
 #### 6.3. Pythonモジュールのインストール
 - StaShを起動し、ターミナルにてPythonモジュールをインストールします。
 ```shell
 pip install paho-mqtt pyjwt
 ```
+- インストール後、Pythonista 3を再起動します。
 
 #### 6.4. ファイルのインポート
 - iCloud Drive上の下記の4ファイルをPythonista上にインポートします。（手順は割愛）
@@ -200,5 +218,6 @@ send_to_cloudiot.sh {{NUM_MESSAGES}}
 ```
 - `{{SCRIPT_DIR}}`には、スクリプト(`send_to_cloudiot.sh`)を配置したディレクトリを指定します。
 - `{{NUM_MESSAGES}}`には、送信回数を指定します。（約1秒に1回の頻度でデータ送信する仕様となっています）
+- 引数を指定せずに実行するとエラーとなります。
 
 以上
