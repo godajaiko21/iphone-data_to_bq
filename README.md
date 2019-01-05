@@ -44,13 +44,8 @@ git clone https://github.com/godajaiko21/iphone-data_to_bq.git
 #### 2.1. サービスアカウントJSONキーの作成
 - 下記サイトの「サービス アカウント キーの作成」に記載の手順をもとに、サービスアカウントの作成とJSONキーファイルのダウンロードを行ってください。
     - https://cloud.google.com/iam/docs/creating-managing-service-account-keys?authuser=19&hl=ja
-    - 注1： 「サービス アカウントの権限（オプション）」画面では、下記の役割を追加してください。
-        - Cloud IoT 管理者
-        - Pub/Sub 管理者
-        - Cloud Functions 開発者
-        - BigQuery 管理者
-        - ストレージ管理者
-        - Compute管理者
+    - 注1： 「サービス アカウントの権限（オプション）」画面では、下記の役割を追加してください。（プロジェクト上の全リソースに対する編集権限）
+        - 編集者
     - 注2: 「キーのタイプ」では、JSONを選択してください。
 
 #### 2.2. サービスアカウントJSONキーの配置
