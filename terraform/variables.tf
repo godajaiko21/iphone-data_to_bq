@@ -47,7 +47,7 @@ variable "google_storage_bucket_cfarch_archive_name" {
 }
 
 variable "google_storage_bucket_cfarch_archive_path" {
-  default = "../../files/cloud_function.zip"
+  default = "../files/cloud_function.zip"
 }
 
 ## BigQuery
