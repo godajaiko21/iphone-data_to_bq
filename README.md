@@ -209,9 +209,10 @@ pip install paho-mqtt pyjwt
 以上
 
 ## 環境利用手順
-### 1. iPhone上でPythonistaを起動します。
-### 2. Pythonista上でのStaShを起動します。
-### 3. Pythonスクリプトを実行します。
+### iPhoneでの操作
+#### 1. iPhone上でPythonistaを起動します。
+#### 2. Pythonista上でのStaShを起動します。
+#### 3. Pythonスクリプトを実行します。
 ```
 cd {{SCRIPT_DIR}}
 send_to_cloudiot.sh {{NUM_MESSAGES}}
@@ -219,5 +220,13 @@ send_to_cloudiot.sh {{NUM_MESSAGES}}
 - `{{SCRIPT_DIR}}`には、スクリプト(`send_to_cloudiot.sh`)を配置したディレクトリを指定します。
 - `{{NUM_MESSAGES}}`には、送信回数を指定します。（約1秒に1回の頻度でデータ送信する仕様となっています）
 - 引数を指定せずに実行するとエラーとなります。
+
+### ブラウザでの操作
+#### 4. ブラウザからGCPコンソールのBigQueryのGUIにアクセスします。
+#### 5. 「クエリエディタ」に下記スクリプトを記載して「実行」を押すことで、BigQueryにデータが挿入されたことを確認します。
+- `{{BQ_DATASET_ID}}`、`{{BQ_TABLE_ID}}`は、手順3.1.の設定と整合するようにします。
+```
+select * from {{BQ_DATASET_ID}}.{{BQ_TABLE_ID}}
+```
 
 以上
