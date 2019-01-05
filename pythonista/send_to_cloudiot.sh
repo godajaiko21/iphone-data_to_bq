@@ -1,0 +1,1 @@
+python3 cloudiot_mqtt.py --registry_id={{REGISTRY_ID}} --cloud_region=asia-east1 --project_id={{PROJECT_ID}} --device_id={{DEVICE_ID}} --algorithm=RS256 --num_messages={{NUM_OF_MESSAGES}} --private_key_file=rsa_private.txt --ca_certs=roots.txt

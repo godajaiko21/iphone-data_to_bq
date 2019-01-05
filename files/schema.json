@@ -1,0 +1,38 @@
+[
+    {
+      "name": "created",
+      "type": "TIMESTAMP"
+    },
+    {
+      "name": "latitude",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "longitude",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "altitude",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "timestamp",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "horizontal_accuracy",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "vertical_accuracy",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "speed",
+      "type": "FLOAT64"
+    },
+    {
+      "name": "course",
+      "type": "FLOAT64"
+    }
+]
